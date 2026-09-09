@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_user, get_db
-from app.core.pagination import PaginatedResponse, PaginationParams
+from app.core.pagination import PaginatedResponse, PaginationParams, paginate
 from app.modules.auth.model import User
 from app.modules.products.controller import ProductController
 from app.modules.products.schemas import (
@@ -34,12 +34,7 @@ async def list_products(
     controller: ProductController = Depends(get_product_controller),
 ):
     items, total = await controller.list_all(pagination)
-    return PaginatedResponse(
-        items=items,
-        total=total,
-        page=pagination.page,
-        limit=pagination.limit,
-    )
+    return paginate(items, total, pagination)
 
 
 @router.get("/{product_id}", response_model=ProductResponse)

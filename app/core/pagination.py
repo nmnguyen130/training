@@ -18,3 +18,16 @@ class PaginatedResponse[T](BaseModel):
     total: int
     page: int
     limit: int
+
+
+def paginate[T](
+    items: list[T],
+    total: int,
+    pagination: PaginationParams,
+) -> PaginatedResponse[T]:
+    return PaginatedResponse(
+        items=items,
+        total=total,
+        page=pagination.page,
+        limit=pagination.limit,
+    )
