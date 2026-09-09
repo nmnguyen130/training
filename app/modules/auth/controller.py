@@ -42,6 +42,7 @@ class AuthController:
             raise ServiceError.conflict("Email already registered")
 
         user = User(
+            name=data.name.strip(),
             email=email,
             hashed_password=hash_password(data.password),
         )
@@ -74,6 +75,8 @@ class AuthController:
         return self.create_tokens(user)
 
     async def update(self, user: User, data: UserUpdate) -> User:
+        if data.name is not None:
+            user.name = data.name.strip()
         if data.password is not None:
             user.hashed_password = hash_password(data.password)
         if data.is_active is not None:

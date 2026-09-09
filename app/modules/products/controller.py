@@ -1,5 +1,5 @@
 from uuid import UUID
-from sqlalchemy import func, select
+from sqlalchemy import bindparam, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ServiceError
@@ -46,3 +46,38 @@ class ProductController:
         await self.db.flush()
         await self.db.refresh(product)
         return product
+
+    async def get_by_owners(self, owners: list[str]) -> list[dict]:
+        cleaned_owners: list[str] = []
+        for item in owners:
+            for part in item.split(","):
+                val = part.strip().lower()
+                if val:
+                    cleaned_owners.append(val)
+        cleaned_owners = list(dict.fromkeys(cleaned_owners))
+
+        if not cleaned_owners:
+            return []
+
+        sql = text("""
+            SELECT 
+                p.id,
+                p.title,
+                p.description,
+                p.price,
+                p.owner_id,
+                p.created_at,
+                u.name AS owner_name,
+                u.email AS owner_email
+            FROM products p
+            INNER JOIN users u ON p.owner_id = u.id
+            WHERE LOWER(u.name) IN :owners
+            ORDER BY p.created_at DESC
+        """).bindparams(bindparam("owners", expanding=True))
+
+        result = await self.db.execute(
+            sql,
+            {"owners": cleaned_owners}
+        )
+        return [dict(row) for row in result.mappings().all()]
+

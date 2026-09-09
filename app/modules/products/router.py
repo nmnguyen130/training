@@ -1,12 +1,17 @@
 from uuid import UUID
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_user, get_db
 from app.core.pagination import PaginatedResponse, PaginationParams
 from app.modules.auth.model import User
 from app.modules.products.controller import ProductController
-from app.modules.products.schemas import ProductCreate, ProductResponse
+from app.modules.products.schemas import (
+    OwnersFilterRequest,
+    ProductCreate,
+    ProductResponse,
+    ProductWithOwnerResponse,
+)
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
@@ -44,3 +49,11 @@ async def get_product(
     controller: ProductController = Depends(get_product_controller),
 ):
     return await controller.get_by_id(product_id)
+
+
+@router.get("/by-owners", response_model=list[ProductWithOwnerResponse])
+async def get_products_by_owners(
+    owners: list[str] = Query(...),
+    controller: ProductController = Depends(get_product_controller),
+):
+    return await controller.get_by_owners(owners)

@@ -19,3 +19,8 @@ class ProductResponse(BaseModel):
     price: Decimal
     owner_id: UUID
     created_at: datetime
+
+
+class ProductWithOwnerResponse(ProductResponse):
+    owner_name: str
+    owner_email: str
