@@ -7,7 +7,6 @@ from app.core.pagination import PaginatedResponse, PaginationParams
 from app.modules.auth.model import User
 from app.modules.products.controller import ProductController
 from app.modules.products.schemas import (
-    OwnersFilterRequest,
     ProductCreate,
     ProductResponse,
     ProductWithOwnerResponse,
