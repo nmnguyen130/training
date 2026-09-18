@@ -16,10 +16,11 @@ from app.modules.auth.schemas import (
     PasswordChange,
     TokenResponse,
     UserAccountUpdate,
+    UserCreate,
     UserLogin,
-    UserRegister,
 )
-from app.modules.parties.model import Party
+from app.modules.parties.model import Party, PartyType
+from app.modules.rbac.model import Role, UserRole
 from app.utils.pagination import PaginationParams
 
 
@@ -27,13 +28,21 @@ class AuthController:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    async def get_by_id(self, user_id: int, with_party: bool = False) -> UserAccount:
+    async def get_by_id(
+        self, user_id: int, with_party: bool = False, with_role: bool = False
+    ) -> UserAccount:
         stmt = select(UserAccount).where(UserAccount.user_id == user_id)
         if with_party:
             stmt = stmt.options(selectinload(UserAccount.party))
         user = await self.db.scalar(stmt)
         if not user:
             raise ServiceError.not_found("User")
+        if with_role:
+            user_role = await self.db.scalar(
+                select(UserRole).options(selectinload(UserRole.role)).where(UserRole.user_id == user_id)
+            )
+            if user_role:
+                user.role = user_role.role
         return user
 
     async def get_by_username(self, username: str) -> UserAccount | None:
@@ -49,41 +58,37 @@ class AuthController:
             refresh_token=refresh_token,
         )
 
-    async def register(self, data: UserRegister) -> UserAccount:
+    async def create_user(
+        self, data: UserCreate, assigned_by: int | None = None
+    ) -> UserAccount:
+        # 1. Validate role and username
+        role = await self.db.get(Role, data.role_id)
+        if not role or not role.is_active:
+            raise ServiceError.bad_request(f"Role #{data.role_id} not found or inactive")
+
         existing_user = await self.get_by_username(data.username)
         if existing_user:
             raise ServiceError.conflict(f"Username '{data.username}' is already taken")
 
-        if data.party_id:
-            party = await self.db.get(Party, data.party_id)
-            if not party or not party.is_active:
-                raise ServiceError.bad_request("Party not found or inactive")
-
-            account_exists = await self.db.scalar(
-                select(UserAccount.user_id).where(UserAccount.party_id == data.party_id)
-            )
-            if account_exists:
-                raise ServiceError.conflict(
-                    f"Party #{data.party_id} already has a user account"
-                )
-        else:
-            party = Party(
-                display_name=data.display_name or data.username,
-                email=data.email,
-                phone=data.phone,
-            )
-            self.db.add(party)
-            await self.db.flush()
-
+        # 2. Create party and user account
+        party = Party(
+            party_type=PartyType.PERSON,
+            display_name=data.display_name,
+            email=data.email,
+            phone=data.phone,
+        )
         user = UserAccount(
-            party_id=party.party_id,
+            party=party,
             username=data.username,
             password_hash=hash_password(data.password),
         )
-        self.db.add(user)
-        await self.db.flush()
+        user_role = UserRole(user=user, role_id=role.role_id, assigned_by=assigned_by)
+        self.db.add_all([party, user, user_role])
+
+        # 3. Commit
         await self.db.commit()
-        user.party = party
+
+        user.party, user.role = party, role
         return user
 
     async def login(self, data: UserLogin) -> TokenResponse:

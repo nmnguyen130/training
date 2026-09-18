@@ -1,3 +1,5 @@
+from enum import StrEnum
+
 # Standard system permissions (resource.action)
 ALL_PERMISSIONS = [
     # Products
@@ -30,19 +32,28 @@ ALL_PERMISSIONS = [
     "role.update",
     "role.delete",
     "user.read",
+    "user.create",
     "user.update",
+    "user.delete",
     "permission.read",
 ]
 
 
+class Role(StrEnum):
+    SUPER_ADMIN = "super_admin"
+    WAREHOUSE_MANAGER = "warehouse_manager"
+    WAREHOUSE_STAFF = "warehouse_staff"
+    SALES_STAFF = "sales_staff"
+
+
 SYSTEM_ROLES = {
-    "super_admin": {
+    Role.SUPER_ADMIN: {
         "role_name": "Super Administrator",
         "description": "Full access to all system functions",
         "is_system": True,
         "permissions": ALL_PERMISSIONS,
     },
-    "warehouse_manager": {
+    Role.WAREHOUSE_MANAGER: {
         "role_name": "Warehouse Manager",
         "description": "Manages product catalog and suppliers",
         "is_system": True,
@@ -59,7 +70,7 @@ SYSTEM_ROLES = {
             "customer.read",
         ],
     },
-    "warehouse_staff": {
+    Role.WAREHOUSE_STAFF: {
         "role_name": "Warehouse Staff",
         "description": "Performs warehouse operations and catalog lookup",
         "is_system": True,
@@ -67,7 +78,7 @@ SYSTEM_ROLES = {
             "product.read",
         ],
     },
-    "sales_staff": {
+    Role.SALES_STAFF: {
         "role_name": "Sales Staff",
         "description": "Manages customers and views product catalog",
         "is_system": True,

@@ -153,27 +153,32 @@ class RbacController:
         return await self.get_role_by_id(role_id, with_permissions=True)
 
     # User Roles
-    async def assign_user_roles(
-        self, user_id: int, role_ids: list[int], assigned_by: int | None = None
-    ) -> list[UserRole]:
+    async def assign_user_role(
+        self, user_id: int, role_id: int, assigned_by: int | None = None
+    ) -> UserRole:
         user = await self.db.get(UserAccount, user_id)
         if not user:
             raise ServiceError.not_found("User")
 
+        role = await self.get_role_by_id(role_id)
+        if not role.is_active:
+            raise ServiceError.bad_request("Role is inactive")
+
         await self.db.execute(delete(UserRole).where(UserRole.user_id == user_id))
-        for rid in set(role_ids):
-            self.db.add(UserRole(user_id=user_id, role_id=rid, assigned_by=assigned_by))
-
+        user_role = UserRole(user_id=user_id, role_id=role_id, assigned_by=assigned_by)
+        self.db.add(user_role)
         await self.db.commit()
-        return await self.get_user_roles(user_id)
 
-    async def get_user_roles(self, user_id: int) -> list[UserRole]:
+        user_role.role = role
+        return user_role
+
+    async def get_user_role(self, user_id: int) -> UserRole | None:
         stmt = (
             select(UserRole)
             .where(UserRole.user_id == user_id)
             .options(selectinload(UserRole.role))
         )
-        return list((await self.db.scalars(stmt)).all())
+        return await self.db.scalar(stmt)
 
     # Permission Checking Engine
     async def has_permission(self, user_id: int, permission_code: str) -> bool:

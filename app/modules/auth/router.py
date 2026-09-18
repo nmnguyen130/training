@@ -10,9 +10,10 @@ from app.modules.auth.schemas import (
     TokenResponse,
     UserAccountResponse,
     UserAccountUpdate,
+    UserCreate,
     UserLogin,
-    UserRegister,
 )
+from app.modules.rbac.dependencies import require_permission
 from app.utils.pagination import PaginatedResponse, PaginationParams, paginate
 
 auth_router = APIRouter(prefix="/auth", tags=["Auth"])
@@ -32,14 +33,6 @@ async def login(
     return await controller.login(data)
 
 
-@auth_router.post("/register", response_model=UserAccountResponse, status_code=status.HTTP_201_CREATED)
-async def register(
-    data: UserRegister,
-    controller: AuthController = Depends(get_auth_controller),
-):
-    return await controller.register(data)
-
-
 @auth_router.post("/refresh", response_model=TokenResponse)
 async def refresh_token(
     data: TokenRefresh,
@@ -49,12 +42,26 @@ async def refresh_token(
 
 
 # Users Endpoints
+@users_router.post(
+    "",
+    response_model=UserAccountResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_permission("user.create"))],
+)
+async def create_user(
+    data: UserCreate,
+    current_user: UserAccount = Depends(get_current_user),
+    controller: AuthController = Depends(get_auth_controller),
+):
+    return await controller.create_user(data, assigned_by=current_user.user_id)
+
+
 @users_router.get("/me", response_model=UserAccountResponse)
 async def get_me(
     current_user: UserAccount = Depends(get_current_user),
     controller: AuthController = Depends(get_auth_controller),
 ):
-    return await controller.get_by_id(current_user.user_id, with_party=True)
+    return await controller.get_by_id(current_user.user_id, with_party=True, with_role=True)
 
 
 @users_router.post("/me/change-password", status_code=status.HTTP_204_NO_CONTENT)
@@ -66,7 +73,11 @@ async def change_password(
     await controller.change_password(current_user.user_id, data)
 
 
-@users_router.get("", response_model=PaginatedResponse[UserAccountResponse])
+@users_router.get(
+    "",
+    response_model=PaginatedResponse[UserAccountResponse],
+    dependencies=[Depends(require_permission("user.read"))],
+)
 async def list_users(
     search: str | None = None,
     is_active: bool | None = None,
@@ -81,15 +92,23 @@ async def list_users(
     return paginate(items=items, total=total, pagination=pagination)
 
 
-@users_router.get("/{user_id}", response_model=UserAccountResponse)
+@users_router.get(
+    "/{user_id}",
+    response_model=UserAccountResponse,
+    dependencies=[Depends(require_permission("user.read"))],
+)
 async def get_user(
     user_id: int,
     controller: AuthController = Depends(get_auth_controller),
 ):
-    return await controller.get_by_id(user_id, with_party=True)
+    return await controller.get_by_id(user_id, with_party=True, with_role=True)
 
 
-@users_router.patch("/{user_id}/status", response_model=UserAccountResponse)
+@users_router.patch(
+    "/{user_id}/status",
+    response_model=UserAccountResponse,
+    dependencies=[Depends(require_permission("user.update"))],
+)
 async def update_user_status(
     user_id: int,
     data: UserAccountUpdate,

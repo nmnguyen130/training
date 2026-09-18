@@ -74,5 +74,7 @@ class UserRole(Base):
     )
 
     role: Mapped["Role"] = relationship("Role", back_populates="user_roles")
-    user: Mapped["UserAccount"] = relationship("UserAccount", foreign_keys=[user_id])
+    user: Mapped["UserAccount"] = relationship(
+        "UserAccount", foreign_keys=[user_id], back_populates="user_roles"
+    )
     assigner: Mapped["UserAccount | None"] = relationship("UserAccount", foreign_keys=[assigned_by])

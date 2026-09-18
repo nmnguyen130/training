@@ -47,7 +47,7 @@ class RolePermissionsAssign(BaseModel):
 
 
 class UserRoleAssign(BaseModel):
-    role_ids: list[int]
+    role_id: int
 
 
 class UserRoleResponse(BaseModel):

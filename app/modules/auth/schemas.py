@@ -9,13 +9,13 @@ class UserLogin(BaseModel):
     password: str
 
 
-class UserRegister(BaseModel):
+class UserCreate(BaseModel):
     username: str = Field(min_length=3, max_length=100)
     password: str = Field(min_length=6, max_length=72)
-    display_name: str | None = Field(default=None, min_length=1, max_length=255)
+    role_id: int
+    display_name: str = Field(min_length=1, max_length=255)
     email: EmailStr | None = Field(default=None, max_length=255)
-    phone: str | None = Field(default=None, max_length=20)
-    party_id: int | None = None
+    phone: str | None = Field(default=None, max_length=50)
 
 
 class TokenRefresh(BaseModel):
@@ -37,6 +37,14 @@ class UserAccountUpdate(BaseModel):
     is_active: bool
 
 
+class UserRoleInfo(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    role_id: int
+    role_code: str
+    role_name: str
+
+
 class UserAccountResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -47,3 +55,4 @@ class UserAccountResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     party: PartyResponse | None = None
+    role: UserRoleInfo | None = None

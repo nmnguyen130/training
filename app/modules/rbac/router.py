@@ -127,28 +127,28 @@ async def list_permissions(
 
 # User Roles Endpoints
 @user_roles_router.put(
-    "/{user_id}/roles",
-    response_model=list[UserRoleResponse],
+    "/{user_id}/role",
+    response_model=UserRoleResponse,
     dependencies=[Depends(require_permission("user.update"))],
 )
-async def assign_user_roles(
+async def assign_user_role(
     user_id: int,
     data: UserRoleAssign,
     current_user: UserAccount = Depends(get_current_user),
     controller: RbacController = Depends(get_rbac_controller),
 ):
-    return await controller.assign_user_roles(
-        user_id=user_id, role_ids=data.role_ids, assigned_by=current_user.user_id
+    return await controller.assign_user_role(
+        user_id=user_id, role_id=data.role_id, assigned_by=current_user.user_id
     )
 
 
 @user_roles_router.get(
-    "/{user_id}/roles",
-    response_model=list[UserRoleResponse],
+    "/{user_id}/role",
+    response_model=UserRoleResponse | None,
     dependencies=[Depends(require_permission("user.read"))],
 )
-async def get_user_roles(
+async def get_user_role(
     user_id: int,
     controller: RbacController = Depends(get_rbac_controller),
 ):
-    return await controller.get_user_roles(user_id)
+    return await controller.get_user_role(user_id)

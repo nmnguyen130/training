@@ -14,6 +14,7 @@ from app.modules.parties.schemas import (
     SupplierCreate,
     SupplierResponse,
 )
+from app.modules.rbac.dependencies import require_permission
 from app.utils.pagination import PaginatedResponse, PaginationParams, paginate
 
 parties_router = APIRouter(prefix="/parties", tags=["Parties"])
@@ -26,7 +27,12 @@ def get_party_controller(db: AsyncSession = Depends(get_db)) -> PartyController:
 
 
 # Parties Endpoints
-@parties_router.post("", response_model=PartyResponse, status_code=status.HTTP_201_CREATED)
+@parties_router.post(
+    "",
+    response_model=PartyResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_permission("party.create"))],
+)
 async def create_party(
     data: PartyCreate,
     controller: PartyController = Depends(get_party_controller),
@@ -34,7 +40,11 @@ async def create_party(
     return await controller.create(data)
 
 
-@parties_router.get("", response_model=PaginatedResponse[PartyDetailResponse])
+@parties_router.get(
+    "",
+    response_model=PaginatedResponse[PartyDetailResponse],
+    dependencies=[Depends(require_permission("party.read"))],
+)
 async def list_parties(
     search: str | None = None,
     party_type: PartyType | None = None,
@@ -51,7 +61,11 @@ async def list_parties(
     return paginate(items=items, total=total, pagination=pagination)
 
 
-@parties_router.get("/{party_id}", response_model=PartyDetailResponse)
+@parties_router.get(
+    "/{party_id}",
+    response_model=PartyDetailResponse,
+    dependencies=[Depends(require_permission("party.read"))],
+)
 async def get_party(
     party_id: int,
     controller: PartyController = Depends(get_party_controller),
@@ -59,7 +73,11 @@ async def get_party(
     return await controller.get_by_id(party_id, with_relations=True)
 
 
-@parties_router.patch("/{party_id}", response_model=PartyResponse)
+@parties_router.patch(
+    "/{party_id}",
+    response_model=PartyResponse,
+    dependencies=[Depends(require_permission("party.update"))],
+)
 async def update_party(
     party_id: int,
     data: PartyUpdate,
@@ -68,7 +86,11 @@ async def update_party(
     return await controller.update(party_id, data)
 
 
-@parties_router.delete("/{party_id}", response_model=PartyResponse)
+@parties_router.delete(
+    "/{party_id}",
+    response_model=PartyResponse,
+    dependencies=[Depends(require_permission("party.delete"))],
+)
 async def deactivate_party(
     party_id: int,
     controller: PartyController = Depends(get_party_controller),
@@ -76,26 +98,25 @@ async def deactivate_party(
     return await controller.deactivate(party_id)
 
 
-@parties_router.post("/{party_id}/customer", response_model=CustomerResponse, status_code=status.HTTP_201_CREATED)
-async def link_customer(
-    party_id: int,
+# Customers Endpoints
+@customers_router.post(
+    "",
+    response_model=CustomerResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_permission("customer.create"))],
+)
+async def create_customer(
     data: CustomerCreate,
     controller: PartyController = Depends(get_party_controller),
 ):
-    return await controller.link_customer(party_id, data)
+    return await controller.create_customer(data)
 
 
-@parties_router.post("/{party_id}/supplier", response_model=SupplierResponse, status_code=status.HTTP_201_CREATED)
-async def link_supplier(
-    party_id: int,
-    data: SupplierCreate,
-    controller: PartyController = Depends(get_party_controller),
-):
-    return await controller.link_supplier(party_id, data)
-
-
-# Customers Endpoints
-@customers_router.get("", response_model=PaginatedResponse[CustomerResponse])
+@customers_router.get(
+    "",
+    response_model=PaginatedResponse[CustomerResponse],
+    dependencies=[Depends(require_permission("customer.read"))],
+)
 async def list_customers(
     pagination: PaginationParams = Depends(),
     controller: PartyController = Depends(get_party_controller),
@@ -104,7 +125,11 @@ async def list_customers(
     return paginate(items=items, total=total, pagination=pagination)
 
 
-@customers_router.get("/{customer_id}", response_model=CustomerResponse)
+@customers_router.get(
+    "/{customer_id}",
+    response_model=CustomerResponse,
+    dependencies=[Depends(require_permission("customer.read"))],
+)
 async def get_customer(
     customer_id: int,
     controller: PartyController = Depends(get_party_controller),
@@ -113,7 +138,24 @@ async def get_customer(
 
 
 # Suppliers Endpoints
-@suppliers_router.get("", response_model=PaginatedResponse[SupplierResponse])
+@suppliers_router.post(
+    "",
+    response_model=SupplierResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_permission("supplier.create"))],
+)
+async def create_supplier(
+    data: SupplierCreate,
+    controller: PartyController = Depends(get_party_controller),
+):
+    return await controller.create_supplier(data)
+
+
+@suppliers_router.get(
+    "",
+    response_model=PaginatedResponse[SupplierResponse],
+    dependencies=[Depends(require_permission("supplier.read"))],
+)
 async def list_suppliers(
     pagination: PaginationParams = Depends(),
     controller: PartyController = Depends(get_party_controller),
@@ -122,7 +164,11 @@ async def list_suppliers(
     return paginate(items=items, total=total, pagination=pagination)
 
 
-@suppliers_router.get("/{supplier_id}", response_model=SupplierResponse)
+@suppliers_router.get(
+    "/{supplier_id}",
+    response_model=SupplierResponse,
+    dependencies=[Depends(require_permission("supplier.read"))],
+)
 async def get_supplier(
     supplier_id: int,
     controller: PartyController = Depends(get_party_controller),

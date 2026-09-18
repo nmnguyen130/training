@@ -1,9 +1,13 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 from app.modules.parties.model import Party
+
+if TYPE_CHECKING:
+    from app.modules.rbac.model import UserRole
 
 
 class UserAccount(Base):
@@ -29,5 +33,11 @@ class UserAccount(Base):
         nullable=False,
     )
 
-    # Unidirectional relationship: UserAccount -> Party
+    # Relationships
     party: Mapped[Party] = relationship(Party)
+    user_roles: Mapped[list["UserRole"]] = relationship(
+        "UserRole",
+        foreign_keys="[UserRole.user_id]",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
