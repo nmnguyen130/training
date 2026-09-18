@@ -13,11 +13,10 @@ http_bearer = HTTPBearer(auto_error=False)
 
 
 async def get_db() -> AsyncIterator[AsyncSession]:
-    """Provide database session with auto-commit on success and rollback on error."""
+    """Provide database session. Services manage the transaction boundary explicitly."""
     async with app_session() as session:
         try:
             yield session
-            await session.commit()
         except Exception:
             await session.rollback()
             raise
