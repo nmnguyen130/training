@@ -37,14 +37,10 @@ class Party(Base):
 
     # Relationships
     customer: Mapped["Customer | None"] = relationship(
-        "Customer",
-        back_populates="party",
-        uselist=False,
+        "Customer", back_populates="party", uselist=False
     )
     supplier: Mapped["Supplier | None"] = relationship(
-        "Supplier",
-        back_populates="party",
-        uselist=False,
+        "Supplier", back_populates="party", uselist=False
     )
 
 

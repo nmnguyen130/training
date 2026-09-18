@@ -10,6 +10,8 @@ from app.core.config import settings
 from app.core.database import app_engine, app_session, owner_engine
 from app.core.exceptions import register_exception_handlers
 
+from app.modules.rbac.seeder import seed_rbac
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -17,7 +19,12 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting application %s...", settings.PROJECT_NAME)
-    
+    try:
+        async with app_session() as session:
+            await seed_rbac(session)
+    except Exception as e:
+        logger.error("Failed to seed RBAC on startup: %s", e)
+
     yield
     logger.info("Disposing database connection pool...")
     await app_engine.dispose()
