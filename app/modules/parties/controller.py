@@ -81,6 +81,7 @@ class PartyController:
         )
         self.db.add(party)
         await self.db.commit()
+        await self.db.refresh(party)
         return party
 
     async def update(self, party_id: int, data: PartyUpdate) -> Party:
@@ -91,23 +92,23 @@ class PartyController:
             setattr(party, field, value)
 
         await self.db.commit()
+        await self.db.refresh(party)
         return party
 
     async def deactivate(self, party_id: int) -> Party:
         party = await self.get_by_id(party_id, with_relations=True)
         party.is_active = False
         await self.db.commit()
+        await self.db.refresh(party)
         return party
 
     # Customer Operations
     async def link_customer(self, party_id: int, data: CustomerCreate) -> Customer:
         party = await self.get_by_id(party_id, with_relations=True)
         if not party.is_active:
-            raise ServiceError.bad_request("Cannot link customer to an inactive party")
-        if party.customer is not None:
-            raise ServiceError.conflict(
-                f"Party #{party_id} is already registered as a Customer with code '{party.customer.customer_code}'"
-            )
+            raise ServiceError.bad_request("Party is inactive")
+        if party.customer:
+            raise ServiceError.conflict("Party is already a customer")
 
         code_exists = await self.db.scalar(
             select(Customer.customer_id).where(Customer.customer_code == data.customer_code)
@@ -156,11 +157,9 @@ class PartyController:
     async def link_supplier(self, party_id: int, data: SupplierCreate) -> Supplier:
         party = await self.get_by_id(party_id, with_relations=True)
         if not party.is_active:
-            raise ServiceError.bad_request("Cannot link supplier to an inactive party")
-        if party.supplier is not None:
-            raise ServiceError.conflict(
-                f"Party #{party_id} is already registered as a Supplier with code '{party.supplier.supplier_code}'"
-            )
+            raise ServiceError.bad_request("Party is inactive")
+        if party.supplier:
+            raise ServiceError.conflict("Party is already a supplier")
 
         code_exists = await self.db.scalar(
             select(Supplier.supplier_id).where(Supplier.supplier_code == data.supplier_code)

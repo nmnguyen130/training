@@ -59,5 +59,8 @@ class PartyResponse(PartyBase):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+
+
+class PartyDetailResponse(PartyResponse):
     customer: CustomerResponse | None = None
     supplier: SupplierResponse | None = None

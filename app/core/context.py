@@ -8,7 +8,7 @@ from dataclasses import dataclass
 class RequestContext:
     request_id: str
     trace_id: str
-    user_id: uuid.UUID | None = None
+    user_id: int | uuid.UUID | None = None
     role: str | None = None
 
 

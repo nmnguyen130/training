@@ -29,7 +29,7 @@ def verify_password(plain_password: str, hashed_password: str | None) -> bool:
         return False
 
 
-def create_access_token(user_id: UUID) -> str:
+def create_access_token(user_id: int | UUID | str) -> str:
     """Create short-lived JWT access token."""
     expires = datetime.now(UTC) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {
@@ -41,7 +41,7 @@ def create_access_token(user_id: UUID) -> str:
     return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
 
 
-def create_refresh_token(user_id: UUID) -> tuple[str, str, datetime]:
+def create_refresh_token(user_id: int | UUID | str) -> tuple[str, str, datetime]:
     """Create long-lived JWT refresh token."""
     jti = uuid.uuid4().hex
     expires = datetime.now(UTC) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)

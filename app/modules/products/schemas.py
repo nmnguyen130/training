@@ -17,7 +17,7 @@ class ProductResponse(BaseModel):
     title: str
     description: str | None
     price: Decimal
-    owner_id: UUID
+    owner_id: int
     created_at: datetime
 
 

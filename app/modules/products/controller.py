@@ -3,7 +3,7 @@ from sqlalchemy import bindparam, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ServiceError
-from app.core.pagination import PaginationParams
+from app.utils.pagination import PaginationParams
 from app.modules.products.model import Product
 from app.modules.products.schemas import ProductCreate
 
@@ -35,7 +35,7 @@ class ProductController:
 
         return items, total
 
-    async def create(self, owner_id: UUID, data: ProductCreate) -> Product:
+    async def create(self, owner_id: int, data: ProductCreate) -> Product:
         product = Product(
             title=data.title.strip(),
             description=data.description,
@@ -43,7 +43,7 @@ class ProductController:
             owner_id=owner_id,
         )
         self.db.add(product)
-        await self.db.flush()
+        await self.db.commit()
         await self.db.refresh(product)
         return product
 

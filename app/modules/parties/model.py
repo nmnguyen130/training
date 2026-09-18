@@ -40,16 +40,9 @@ class Party(Base):
         "Customer",
         back_populates="party",
         uselist=False,
-        cascade="all, delete-orphan",
     )
     supplier: Mapped["Supplier | None"] = relationship(
         "Supplier",
-        back_populates="party",
-        uselist=False,
-        cascade="all, delete-orphan",
-    )
-    user_account: Mapped["UserAccount | None"] = relationship(
-        "UserAccount",
         back_populates="party",
         uselist=False,
     )
@@ -63,9 +56,7 @@ class Customer(Base):
         ForeignKey("parties.party_id", ondelete="CASCADE"),
         primary_key=True,
     )
-    customer_code: Mapped[str] = mapped_column(
-        String(50), unique=True, nullable=False, index=True
-    )
+    customer_code: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -82,9 +73,7 @@ class Supplier(Base):
         ForeignKey("parties.party_id", ondelete="CASCADE"),
         primary_key=True,
     )
-    supplier_code: Mapped[str] = mapped_column(
-        String(50), unique=True, nullable=False, index=True
-    )
+    supplier_code: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

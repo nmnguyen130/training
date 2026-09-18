@@ -31,7 +31,9 @@ class RequestContextMiddleware:
             token = auth_header.split(" ", 1)[1]
             try:
                 payload = decode_token(token, expected_type="access")
-                user_id = uuid.UUID(payload["sub"]) if payload.get("sub") else None
+                sub = payload.get("sub")
+                if sub:
+                    user_id = int(sub) if str(sub).isdigit() else uuid.UUID(str(sub))
                 role = payload.get("role")
             except Exception:
                 pass  # Invalid or expired token will be handled by auth dependencies

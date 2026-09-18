@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.context import RequestContext, try_current_context
 from app.core.database import app_session
-from app.modules.auth.model import User
+from app.modules.auth.model import UserAccount
 
 # Swagger UI Bearer token security scheme
 http_bearer = HTTPBearer(auto_error=False)
@@ -39,9 +39,11 @@ async def get_authenticated_context(
 async def get_current_user(
     context: RequestContext = Depends(get_authenticated_context),
     db: AsyncSession = Depends(get_db),
-) -> User:
-    """Retrieve current user from database."""
-    result = await db.scalar(select(User).where(User.id == context.user_id))
+) -> UserAccount:
+    """Retrieve current user account from database."""
+    result = await db.scalar(
+        select(UserAccount).where(UserAccount.user_id == context.user_id)
+    )
     if result is None or not result.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

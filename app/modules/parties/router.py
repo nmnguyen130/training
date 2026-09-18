@@ -8,6 +8,7 @@ from app.modules.parties.schemas import (
     CustomerCreate,
     CustomerResponse,
     PartyCreate,
+    PartyDetailResponse,
     PartyResponse,
     PartyUpdate,
     SupplierCreate,
@@ -33,7 +34,7 @@ async def create_party(
     return await controller.create(data)
 
 
-@parties_router.get("", response_model=PaginatedResponse[PartyResponse])
+@parties_router.get("", response_model=PaginatedResponse[PartyDetailResponse])
 async def list_parties(
     search: str | None = None,
     party_type: PartyType | None = None,
@@ -50,7 +51,7 @@ async def list_parties(
     return paginate(items=items, total=total, pagination=pagination)
 
 
-@parties_router.get("/{party_id}", response_model=PartyResponse)
+@parties_router.get("/{party_id}", response_model=PartyDetailResponse)
 async def get_party(
     party_id: int,
     controller: PartyController = Depends(get_party_controller),

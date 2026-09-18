@@ -3,14 +3,14 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_user, get_db
-from app.core.pagination import PaginatedResponse, PaginationParams, paginate
-from app.modules.auth.model import User
+from app.modules.auth.model import UserAccount
 from app.modules.products.controller import ProductController
 from app.modules.products.schemas import (
     ProductCreate,
     ProductResponse,
     ProductWithOwnerResponse,
 )
+from app.utils.pagination import PaginatedResponse, PaginationParams, paginate
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
@@ -22,10 +22,10 @@ def get_product_controller(db: AsyncSession = Depends(get_db)) -> ProductControl
 @router.post("", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
 async def create_product(
     data: ProductCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: UserAccount = Depends(get_current_user),
     controller: ProductController = Depends(get_product_controller),
 ):
-    return await controller.create(owner_id=current_user.id, data=data)
+    return await controller.create(owner_id=current_user.user_id, data=data)
 
 
 @router.get("", response_model=PaginatedResponse[ProductResponse])
