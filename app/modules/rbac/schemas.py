@@ -3,24 +3,12 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 # Permission Schemas
-class PermissionBase(BaseModel):
-    permission_code: str = Field(min_length=2, max_length=100)
-    description: str | None = Field(default=None, max_length=255)
-
-
-class PermissionCreate(PermissionBase):
-    pass
-
-
-class PermissionUpdate(BaseModel):
-    description: str | None = Field(default=None, max_length=255)
-    is_active: bool | None = None
-
-
-class PermissionResponse(PermissionBase):
+class PermissionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     permission_id: int
+    permission_code: str
+    description: str | None = None
     is_active: bool
 
 

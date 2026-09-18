@@ -1,1 +1,1 @@
-# Products package
+# Products module

@@ -10,6 +10,7 @@ from app.modules.products.schemas import (
     ProductResponse,
     ProductWithOwnerResponse,
 )
+from app.modules.rbac.dependencies import require_permission
 from app.utils.pagination import PaginatedResponse, PaginationParams, paginate
 
 router = APIRouter(prefix="/products", tags=["Products"])
@@ -19,7 +20,12 @@ def get_product_controller(db: AsyncSession = Depends(get_db)) -> ProductControl
     return ProductController(db)
 
 
-@router.post("", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=ProductResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_permission("product.create"))],
+)
 async def create_product(
     data: ProductCreate,
     current_user: UserAccount = Depends(get_current_user),
@@ -28,7 +34,11 @@ async def create_product(
     return await controller.create(owner_id=current_user.user_id, data=data)
 
 
-@router.get("", response_model=PaginatedResponse[ProductResponse])
+@router.get(
+    "",
+    response_model=PaginatedResponse[ProductResponse],
+    dependencies=[Depends(require_permission("product.read"))],
+)
 async def list_products(
     pagination: PaginationParams = Depends(),
     controller: ProductController = Depends(get_product_controller),
@@ -37,7 +47,11 @@ async def list_products(
     return paginate(items, total, pagination)
 
 
-@router.get("/{product_id}", response_model=ProductResponse)
+@router.get(
+    "/{product_id}",
+    response_model=ProductResponse,
+    dependencies=[Depends(require_permission("product.read"))],
+)
 async def get_product(
     product_id: UUID,
     controller: ProductController = Depends(get_product_controller),
@@ -45,7 +59,11 @@ async def get_product(
     return await controller.get_by_id(product_id)
 
 
-@router.get("/by-owners", response_model=list[ProductWithOwnerResponse])
+@router.get(
+    "/by-owners",
+    response_model=list[ProductWithOwnerResponse],
+    dependencies=[Depends(require_permission("product.read"))],
+)
 async def get_products_by_owners(
     owners: list[str] = Query(...),
     controller: ProductController = Depends(get_product_controller),

@@ -5,7 +5,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import app_engine, app_session
-from app.modules.rbac.constants import SYSTEM_PERMISSIONS, SYSTEM_ROLES
+from app.modules.rbac.constants import ALL_PERMISSIONS, SYSTEM_ROLES
 from app.modules.rbac.model import Permission, Role, RolePermission
 
 logger = logging.getLogger(__name__)
@@ -19,17 +19,15 @@ async def seed_rbac(db: AsyncSession) -> None:
     perm_values = [
         {
             "permission_code": code,
-            "description": desc,
             "is_active": True,
         }
-        for code, desc in SYSTEM_PERMISSIONS
+        for code in ALL_PERMISSIONS
     ]
     perm_insert_stmt = (
         pg_insert(Permission)
         .values(perm_values)
-        .on_conflict_do_update(
+        .on_conflict_do_nothing(
             index_elements=[Permission.permission_code],
-            set_={"description": pg_insert(Permission).excluded.description},
         )
     )
     await db.execute(perm_insert_stmt)
@@ -93,7 +91,7 @@ async def seed_rbac(db: AsyncSession) -> None:
     await db.commit()
     logger.info(
         "RBAC seed completed: %d permissions, %d system roles configured.",
-        len(SYSTEM_PERMISSIONS),
+        len(ALL_PERMISSIONS),
         len(SYSTEM_ROLES),
     )
 

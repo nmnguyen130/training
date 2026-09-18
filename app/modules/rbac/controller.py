@@ -5,12 +5,7 @@ from sqlalchemy.orm import selectinload
 from app.core.exceptions import ServiceError
 from app.modules.auth.model import UserAccount
 from app.modules.rbac.model import Permission, Role, RolePermission, UserRole
-from app.modules.rbac.schemas import (
-    PermissionCreate,
-    PermissionUpdate,
-    RoleCreate,
-    RoleUpdate,
-)
+from app.modules.rbac.schemas import RoleCreate, RoleUpdate
 from app.utils.pagination import PaginationParams
 
 
@@ -19,23 +14,6 @@ class RbacController:
         self.db = db
 
     # Permissions
-    async def create_permission(self, data: PermissionCreate) -> Permission:
-        exists = await self.db.scalar(
-            select(Permission.permission_id).where(Permission.permission_code == data.permission_code)
-        )
-        if exists:
-            raise ServiceError.conflict(f"Permission code '{data.permission_code}' already exists")
-
-        perm = Permission(
-            permission_code=data.permission_code,
-            description=data.description,
-            is_active=True,
-        )
-        self.db.add(perm)
-        await self.db.flush()
-        await self.db.commit()
-        return perm
-
     async def list_permissions(
         self,
         pagination: PaginationParams,
@@ -71,23 +49,6 @@ class RbacController:
 
         return items, total
 
-    async def get_permission_by_id(self, permission_id: int) -> Permission:
-        stmt = select(Permission).where(Permission.permission_id == permission_id)
-        perm = await self.db.scalar(stmt)
-        if not perm:
-            raise ServiceError.not_found("Permission")
-        return perm
-
-    async def update_permission(self, permission_id: int, data: PermissionUpdate) -> Permission:
-        perm = await self.get_permission_by_id(permission_id)
-
-        update_dict = data.model_dump(exclude_unset=True)
-        for field, value in update_dict.items():
-            setattr(perm, field, value)
-
-        await self.db.commit()
-        return perm
-
     # Roles
     async def get_role_by_id(self, role_id: int, with_permissions: bool = False) -> Role:
         stmt = select(Role).where(Role.role_id == role_id)
@@ -118,11 +79,8 @@ class RbacController:
             for pid in set(data.permission_ids):
                 self.db.add(RolePermission(role_id=role.role_id, permission_id=pid))
             await self.db.flush()
-            await self.db.commit()
-            return await self.get_role_by_id(role.role_id, with_permissions=True)
 
         await self.db.commit()
-        role.permissions = []
         return role
 
     async def list_roles(
@@ -218,23 +176,20 @@ class RbacController:
         return list((await self.db.scalars(stmt)).all())
 
     # Permission Checking Engine
-    async def get_user_permissions(self, user_id: int) -> set[str]:
+    async def has_permission(self, user_id: int, permission_code: str) -> bool:
         stmt = (
-            select(Permission.permission_code)
-            .join(RolePermission, Permission.permission_id == RolePermission.permission_id)
-            .join(Role, RolePermission.role_id == Role.role_id)
-            .join(UserRole, Role.role_id == UserRole.role_id)
+            select(1)
+            .select_from(UserRole)
+            .join(Role, UserRole.role_id == Role.role_id)
+            .join(RolePermission, Role.role_id == RolePermission.role_id)
+            .join(Permission, RolePermission.permission_id == Permission.permission_id)
             .where(
                 UserRole.user_id == user_id,
                 Role.is_active == True,
                 Permission.is_active == True,
+                Permission.permission_code == permission_code,
             )
+            .limit(1)
         )
-        results = await self.db.scalars(stmt)
-        return set(results.all())
-
-    async def has_permission(self, user_id: int, permission_code: str) -> bool:
-        perms = await self.get_user_permissions(user_id)
-        if "system.admin" in perms:
-            return True
-        return permission_code in perms
+        result = await self.db.scalar(stmt)
+        return result is not None
