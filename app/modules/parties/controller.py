@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -80,8 +81,8 @@ class PartyController:
             address=data.address,
         )
         self.db.add(party)
+        await self.db.flush()
         await self.db.commit()
-        await self.db.refresh(party)
         return party
 
     async def update(self, party_id: int, data: PartyUpdate) -> Party:
@@ -91,15 +92,15 @@ class PartyController:
         for field, value in update_data.items():
             setattr(party, field, value)
 
+        party.updated_at = datetime.now(timezone.utc)
         await self.db.commit()
-        await self.db.refresh(party)
         return party
 
     async def deactivate(self, party_id: int) -> Party:
         party = await self.get_by_id(party_id, with_relations=True)
         party.is_active = False
+        party.updated_at = datetime.now(timezone.utc)
         await self.db.commit()
-        await self.db.refresh(party)
         return party
 
     # Customer Operations

@@ -34,7 +34,7 @@ class PasswordChange(BaseModel):
 
 
 class UserAccountUpdate(BaseModel):
-    is_active: bool | None = None
+    is_active: bool
 
 
 class UserAccountResponse(BaseModel):

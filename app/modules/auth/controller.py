@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -80,8 +81,8 @@ class AuthController:
             password_hash=hash_password(data.password),
         )
         self.db.add(user)
+        await self.db.flush()
         await self.db.commit()
-        await self.db.refresh(user)
         user.party = party
         return user
 
@@ -117,10 +118,9 @@ class AuthController:
 
     async def update_status(self, user_id: int, data: UserAccountUpdate) -> UserAccount:
         user = await self.get_by_id(user_id, with_party=True)
-        if data.is_active is not None:
-            user.is_active = data.is_active
-            await self.db.commit()
-            await self.db.refresh(user)
+        user.is_active = data.is_active
+        user.updated_at = datetime.now(timezone.utc)
+        await self.db.commit()
         return user
 
     async def list_users(
