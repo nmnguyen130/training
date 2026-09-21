@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.exceptions import ServiceError
+from app.modules.auth.model import UserAccount
 from app.modules.parties.model import Customer, Party, PartyType, Supplier
 from app.modules.parties.schemas import (
     CustomerCreate,
@@ -11,12 +12,18 @@ from app.modules.parties.schemas import (
     PartyUpdate,
     SupplierCreate,
 )
+from app.modules.rbac.field_permissions import check_field_permissions
 from app.utils.pagination import PaginationParams
 
 
 class PartyController:
-    def __init__(self, db: AsyncSession) -> None:
+    def __init__(
+        self,
+        db: AsyncSession,
+        current_user: UserAccount | None = None,
+    ) -> None:
         self.db = db
+        self.current_user = current_user
 
     async def get_by_id(self, party_id: int, with_relations: bool = False) -> Party:
         stmt = select(Party).where(Party.party_id == party_id)
@@ -86,6 +93,13 @@ class PartyController:
         return party
 
     async def update(self, party_id: int, data: PartyUpdate) -> Party:
+        check_field_permissions(
+            resource="party",
+            action="update",
+            role_code=getattr(self.current_user, "role_code", None),
+            fields=data.model_fields_set,
+        )
+
         party = await self.get_by_id(party_id, with_relations=True)
         update_data = data.model_dump(exclude_unset=True)
 

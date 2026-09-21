@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_db
+from app.api.dependencies import get_current_user, get_db
+from app.modules.auth.model import UserAccount
 from app.modules.parties.controller import PartyController
 from app.modules.parties.model import PartyType
 from app.modules.parties.schemas import (
@@ -22,8 +23,11 @@ customers_router = APIRouter(prefix="/customers", tags=["Customers"])
 suppliers_router = APIRouter(prefix="/suppliers", tags=["Suppliers"])
 
 
-def get_party_controller(db: AsyncSession = Depends(get_db)) -> PartyController:
-    return PartyController(db)
+def get_party_controller(
+    db: AsyncSession = Depends(get_db),
+    current_user: UserAccount = Depends(get_current_user),
+) -> PartyController:
+    return PartyController(db, current_user=current_user)
 
 
 # Parties Endpoints

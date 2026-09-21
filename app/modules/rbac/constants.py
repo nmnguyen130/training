@@ -65,3 +65,24 @@ SYSTEM_ROLES = {
         },
     },
 }
+
+
+# Field write permissions: "{resource}.{action}" -> {role_code: frozenset(allowed_fields)}.
+# Fail-closed for unlisted roles; SUPER_ADMIN bypasses.
+FIELD_PERMISSIONS: dict[str, dict[str, frozenset[str]]] = {
+    "party.update": {
+        Role.WAREHOUSE_MANAGER.value: frozenset({
+            "party_type",
+            "display_name",
+            "phone",
+            "email",
+            "address",
+            "is_active",
+        }),
+        Role.SALES_STAFF.value: frozenset({
+            "phone",
+            "email",
+            "address",
+        }),
+    },
+}

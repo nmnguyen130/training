@@ -20,6 +20,11 @@ def require_permission(permission_code: str) -> Callable:
         allowed = await controller.has_permission(current_user.user_id, permission_code)
         if not allowed:
             raise ServiceError.forbidden(f"Permission denied: requires '{permission_code}'")
+
+        user_role = await controller.get_user_role(current_user.user_id)
+        if user_role and user_role.role:
+            current_user.role_code = user_role.role.role_code
+
         return current_user
 
     return dependency
