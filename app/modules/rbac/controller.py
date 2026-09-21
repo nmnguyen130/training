@@ -1,9 +1,10 @@
-from sqlalchemy import delete, func, or_, select
+from sqlalchemy import delete, exists, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.exceptions import ServiceError
 from app.modules.auth.model import UserAccount
+from app.modules.rbac.constants import Role as RoleEnum
 from app.modules.rbac.model import Permission, Role, RolePermission, UserRole
 from app.modules.rbac.schemas import RoleCreate, RoleUpdate
 from app.utils.pagination import PaginationParams
@@ -182,19 +183,22 @@ class RbacController:
 
     # Permission Checking Engine
     async def has_permission(self, user_id: int, permission_code: str) -> bool:
-        stmt = (
+        user_role = await self.get_user_role(user_id)
+        if not user_role or not user_role.role or not user_role.role.is_active:
+            return False
+
+        if user_role.role.role_code == RoleEnum.SUPER_ADMIN:
+            return True
+
+        stmt = select(
             select(1)
-            .select_from(UserRole)
-            .join(Role, UserRole.role_id == Role.role_id)
-            .join(RolePermission, Role.role_id == RolePermission.role_id)
+            .select_from(RolePermission)
             .join(Permission, RolePermission.permission_id == Permission.permission_id)
             .where(
-                UserRole.user_id == user_id,
-                Role.is_active == True,
-                Permission.is_active == True,
+                RolePermission.role_id == user_role.role_id,
+                Permission.is_active.is_(True),
                 Permission.permission_code == permission_code,
             )
-            .limit(1)
+            .exists()
         )
-        result = await self.db.scalar(stmt)
-        return result is not None
+        return bool(await self.db.scalar(stmt))

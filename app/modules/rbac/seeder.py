@@ -34,8 +34,8 @@ async def seed_rbac(db: AsyncSession) -> None:
     await db.flush()
 
     # Load all permissions into a lookup map: code -> id
-    perm_rows = (await db.scalars(select(Permission))).all()
-    perm_map = {p.permission_code: p.permission_id for p in perm_rows}
+    perm_res = await db.execute(select(Permission.permission_code, Permission.permission_id))
+    perm_map = dict(perm_res.all())
 
     # 2. Upsert System Roles
     role_values = [
@@ -64,19 +64,20 @@ async def seed_rbac(db: AsyncSession) -> None:
     await db.flush()
 
     # Load all roles into a lookup map: code -> id
-    role_rows = (await db.scalars(select(Role))).all()
-    role_map = {r.role_code: r.role_id for r in role_rows}
+    role_res = await db.execute(select(Role.role_code, Role.role_id))
+    role_map = dict(role_res.all())
 
     # 3. Seed Role-Permission Mappings
     rp_values = []
-    for role_code, role_info in SYSTEM_ROLES.items():
+    for role_code, info in SYSTEM_ROLES.items():
         role_id = role_map.get(role_code)
         if not role_id:
             continue
-        for perm_code in role_info["permissions"]:
-            perm_id = perm_map.get(perm_code)
-            if perm_id:
-                rp_values.append({"role_id": role_id, "permission_id": perm_id})
+        for res, actions in info["permissions"].items():
+            for action in actions:
+                perm_id = perm_map.get(f"{res}.{action}")
+                if perm_id:
+                    rp_values.append({"role_id": role_id, "permission_id": perm_id})
 
     if rp_values:
         rp_insert_stmt = (

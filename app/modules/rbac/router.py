@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies import get_current_user, get_db
 from app.modules.auth.model import UserAccount
 from app.modules.rbac.controller import RbacController
-from app.modules.rbac.dependencies import require_permission
+from app.modules.rbac.dependencies import get_rbac_controller, require_permission
 from app.modules.rbac.schemas import (
     PermissionResponse,
     RoleCreate,
@@ -20,10 +20,6 @@ from app.utils.pagination import PaginatedResponse, PaginationParams, paginate
 roles_router = APIRouter(prefix="/roles", tags=["Roles"])
 permissions_router = APIRouter(prefix="/permissions", tags=["Permissions"])
 user_roles_router = APIRouter(prefix="/users", tags=["User Roles"])
-
-
-def get_rbac_controller(db: AsyncSession = Depends(get_db)) -> RbacController:
-    return RbacController(db)
 
 
 # Roles Endpoints

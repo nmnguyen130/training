@@ -8,12 +8,15 @@ from app.modules.auth.model import UserAccount
 from app.modules.rbac.controller import RbacController
 
 
+def get_rbac_controller(db: AsyncSession = Depends(get_db)) -> RbacController:
+    return RbacController(db)
+
+
 def require_permission(permission_code: str) -> Callable:
     async def dependency(
         current_user: UserAccount = Depends(get_current_user),
-        db: AsyncSession = Depends(get_db),
+        controller: RbacController = Depends(get_rbac_controller),
     ) -> UserAccount:
-        controller = RbacController(db)
         allowed = await controller.has_permission(current_user.user_id, permission_code)
         if not allowed:
             raise ServiceError.forbidden(f"Permission denied: requires '{permission_code}'")
