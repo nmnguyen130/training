@@ -113,9 +113,6 @@ class WarehouseController:
                     raise ServiceError.conflict(f"Warehouse code '{code}' is already taken")
             update_data["warehouse_code"] = code
 
-        if "warehouse_name" in update_data and update_data["warehouse_name"]:
-            update_data["warehouse_name"] = update_data["warehouse_name"].strip()
-
         for field, value in update_data.items():
             setattr(warehouse, field, value)
 
@@ -297,7 +294,7 @@ class LocationController:
 
         if "parent_location_id" in update_data:
             new_parent_id = update_data["parent_location_id"]
-            if new_parent_id is not None:
+            if new_parent_id != location.parent_location_id and new_parent_id is not None:
                 if new_parent_id == location_id:
                     raise ServiceError.bad_request("Location cannot be its own parent")
                 parent = await self.get_by_id(new_parent_id)
@@ -335,15 +332,6 @@ class LocationController:
                 if barcode_exists:
                     raise ServiceError.conflict(f"Barcode '{b_code}' is already taken")
             update_data["barcode"] = b_code
-
-        if "location_name" in update_data and update_data["location_name"]:
-            update_data["location_name"] = update_data["location_name"].strip()
-
-        if "location_type" in update_data and update_data["location_type"]:
-            update_data["location_type"] = update_data["location_type"].strip().upper()
-
-        if "location_purpose" in update_data and update_data["location_purpose"]:
-            update_data["location_purpose"] = update_data["location_purpose"].strip().upper()
 
         for field, value in update_data.items():
             setattr(location, field, value)

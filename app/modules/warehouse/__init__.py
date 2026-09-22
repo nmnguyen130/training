@@ -1,1 +1,1 @@
-# Warehouse & Locations Package
+# Warehouse & Locations modules

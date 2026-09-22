@@ -125,12 +125,6 @@ class ProductController:
                     raise ServiceError.conflict(f"Barcode '{barcode}' is already taken")
             update_data["barcode"] = barcode
 
-        if "name" in update_data and update_data["name"]:
-            update_data["name"] = update_data["name"].strip()
-
-        if "unit" in update_data and update_data["unit"]:
-            update_data["unit"] = update_data["unit"].strip()
-
         for field, value in update_data.items():
             setattr(product, field, value)
 
