@@ -23,6 +23,8 @@ RESOURCES = (
     "role",
     "user",
     "permission",
+    "warehouse",
+    "inventory",
 )
 
 ALL_PERMISSIONS = [f"{r}.{a}" for r in RESOURCES for a in CRUD]
@@ -37,10 +39,12 @@ SYSTEM_ROLES = {
     },
     Role.WAREHOUSE_MANAGER: {
         "role_name": "Warehouse Manager",
-        "description": "Manages product catalog and suppliers",
+        "description": "Manages warehouse layout, product catalog, inventory, and suppliers",
         "is_system": True,
         "permissions": {
             "product": CRUD,
+            "warehouse": CRUD,
+            "inventory": CRUD,
             "supplier": CRUD,
             "party": ("read",),
             "customer": ("read",),
@@ -48,10 +52,12 @@ SYSTEM_ROLES = {
     },
     Role.WAREHOUSE_STAFF: {
         "role_name": "Warehouse Staff",
-        "description": "Performs warehouse operations and catalog lookup",
+        "description": "Performs warehouse operations, stock transfers, and catalog lookup",
         "is_system": True,
         "permissions": {
             "product": ("read",),
+            "warehouse": ("read",),
+            "inventory": ("read", "create", "update"),
         },
     },
     Role.SALES_STAFF: {
@@ -62,6 +68,7 @@ SYSTEM_ROLES = {
             "customer": ("read", "create", "update"),
             "product": ("read",),
             "party": ("read",),
+            "inventory": ("read",),
         },
     },
 }
