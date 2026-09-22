@@ -12,7 +12,8 @@ from app.modules.warehouse.schemas import (
     LocationUpdate,
     WarehouseCreate,
     WarehouseResponse,
-    WarehouseUpdate,
+    # WarehouseUpdate,
+    WarehouseBase
 )
 from app.utils.pagination import PaginatedResponse, PaginationParams, paginate
 
@@ -77,16 +78,16 @@ async def get_warehouse(
 
 
 @router.patch(
-    "/warehouses/{warehouse_id}",
+    "/warehouses/",
     response_model=WarehouseResponse,
     dependencies=[Depends(require_permission("warehouse.update"))],
 )
 async def update_warehouse(
-    warehouse_id: int,
-    data: WarehouseUpdate,
+    # warehouse_id: int,
+    data: WarehouseBase,
     controller: WarehouseController = Depends(get_warehouse_controller),
 ):
-    return await controller.update(warehouse_id, data)
+    return await controller.update(data)
 
 
 @router.delete(

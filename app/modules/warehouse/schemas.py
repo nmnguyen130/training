@@ -5,23 +5,25 @@ from pydantic import BaseModel, ConfigDict, Field
 
 # Warehouse Schemas
 class WarehouseBase(BaseModel):
-    warehouse_code: str = Field(min_length=1, max_length=50)
-    warehouse_name: str = Field(min_length=1, max_length=100)
+    warehouse_id: int | None = None
+    warehouse_code: str | None = Field(None, min_length=1, max_length=50)
+    warehouse_name: str | None = Field(None, min_length=1, max_length=100)
     address: str | None = None
     description: str | None = None
-    is_active: bool = True
+    is_active: bool | None = True
 
 
 class WarehouseCreate(WarehouseBase):
     pass
 
 
-class WarehouseUpdate(BaseModel):
-    warehouse_code: str | None = Field(None, min_length=1, max_length=50)
-    warehouse_name: str | None = Field(None, min_length=1, max_length=100)
-    address: str | None = None
-    description: str | None = None
-    is_active: bool | None = None
+# class WarehouseUpdate(BaseModel):
+#     warehouse_id: int
+#     warehouse_code: str | None = Field(None, min_length=1, max_length=50)
+#     warehouse_name: str | None = Field(None, min_length=1, max_length=100)
+#     address: str | None = None
+#     description: str | None = None
+#     is_active: bool | None = None
 
 
 class WarehouseResponse(WarehouseBase):

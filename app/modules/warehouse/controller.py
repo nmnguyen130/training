@@ -1,3 +1,4 @@
+from app.modules.warehouse.schemas import WarehouseBase
 from datetime import datetime, timezone
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,7 +13,7 @@ from app.modules.warehouse.schemas import (
     LocationTreeResponse,
     LocationUpdate,
     WarehouseCreate,
-    WarehouseUpdate,
+    # WarehouseUpdate,
 )
 from app.utils.pagination import PaginationParams
 
@@ -83,7 +84,7 @@ class WarehouseController:
         )
         if code_exists:
             raise ServiceError.conflict(f"Warehouse code '{code}' is already taken")
-
+        
         warehouse = Warehouse(
             warehouse_code=code,
             warehouse_name=data.warehouse_name.strip(),
@@ -96,8 +97,11 @@ class WarehouseController:
         await self.db.commit()
         return warehouse
 
-    async def update(self, warehouse_id: int, data: WarehouseUpdate) -> Warehouse:
-        warehouse = await self.get_by_id(warehouse_id)
+    async def update(self, data: WarehouseBase) -> Warehouse:
+        if data.warehouse_id is None:
+            raise ServiceError.conflict("Missing warehouse id")
+
+        warehouse = await self.get_by_id(data.warehouse_id)
         update_data = data.model_dump(exclude_unset=True)
 
         if "warehouse_code" in update_data:
@@ -106,7 +110,7 @@ class WarehouseController:
                 code_exists = await self.db.scalar(
                     select(Warehouse.warehouse_id).where(
                         Warehouse.warehouse_code == code,
-                        Warehouse.warehouse_id != warehouse_id,
+                        Warehouse.warehouse_id != data.warehouse_id,
                     )
                 )
                 if code_exists:

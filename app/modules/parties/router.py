@@ -35,7 +35,7 @@ def get_party_controller(
     "",
     response_model=PartyResponse,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_permission("party.create"))],
+    # dependencies=[Depends(require_permission("party.create"))],
 )
 async def create_party(
     data: PartyCreate,
