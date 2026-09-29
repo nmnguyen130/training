@@ -1,4 +1,5 @@
-from app.modules.warehouse.schemas import WarehouseBase
+import logging
+
 from datetime import datetime, timezone
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,9 +14,11 @@ from app.modules.warehouse.schemas import (
     LocationTreeResponse,
     LocationUpdate,
     WarehouseCreate,
-    # WarehouseUpdate,
+    WarehouseUpdate,
 )
 from app.utils.pagination import PaginationParams
+
+logger = logging.getLogger(__name__)
 
 
 class WarehouseController:
@@ -97,11 +100,8 @@ class WarehouseController:
         await self.db.commit()
         return warehouse
 
-    async def update(self, data: WarehouseBase) -> Warehouse:
-        if data.warehouse_id is None:
-            raise ServiceError.conflict("Missing warehouse id")
-
-        warehouse = await self.get_by_id(data.warehouse_id)
+    async def update(self, warehouse_id: int, data: WarehouseUpdate) -> Warehouse:
+        warehouse = await self.get_by_id(warehouse_id)
         update_data = data.model_dump(exclude_unset=True)
 
         if "warehouse_code" in update_data:
@@ -110,7 +110,7 @@ class WarehouseController:
                 code_exists = await self.db.scalar(
                     select(Warehouse.warehouse_id).where(
                         Warehouse.warehouse_code == code,
-                        Warehouse.warehouse_id != data.warehouse_id,
+                        Warehouse.warehouse_id != warehouse_id,
                     )
                 )
                 if code_exists:
@@ -161,10 +161,10 @@ class LocationController:
         can_store_inventory: bool | None = None,
         is_active: bool | None = None,
     ) -> list[Location]:
-        warehouse_exists = await self.db.scalar(
-            select(Warehouse.warehouse_id).where(Warehouse.warehouse_id == warehouse_id)
+        warehouse = await self.db.scalar(
+            select(Warehouse).where(Warehouse.warehouse_id == warehouse_id)
         )
-        if not warehouse_exists:
+        if not warehouse:
             raise ServiceError.not_found("Warehouse")
 
         filters = [Location.warehouse_id == warehouse_id]
@@ -181,7 +181,28 @@ class LocationController:
             .where(*filters)
             .order_by(Location.sort_order.asc(), Location.location_code.asc())
         )
-        return list((await self.db.scalars(stmt)).all())
+        locations = list((await self.db.scalars(stmt)).all())
+
+        all_loc_stmt = select(
+            Location.location_id, Location.location_name, Location.parent_location_id
+        ).where(Location.warehouse_id == warehouse_id)
+        all_locs = {
+            row[0]: (row[1], row[2])
+            for row in (await self.db.execute(all_loc_stmt)).all()
+        }
+
+        for loc in locations:
+            paths = [loc.location_name]
+            curr_parent_id = loc.parent_location_id
+            visited = {loc.location_id}
+            while curr_parent_id and curr_parent_id in all_locs and curr_parent_id not in visited:
+                visited.add(curr_parent_id)
+                p_name, p_parent = all_locs[curr_parent_id]
+                paths.append(p_name)
+                curr_parent_id = p_parent
+            loc.location_path = f"{warehouse.warehouse_name}/{'/'.join(reversed(paths))}"
+
+        return locations
 
     async def get_tree(self, warehouse_id: int) -> list[LocationTreeResponse]:
         warehouse_exists = await self.db.scalar(
